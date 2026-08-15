@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PAC — Personal AI Companion</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- ============================================================ -->
+  <!-- 1. LANDING PAGE VIEW -->
+  <!-- ============================================================ -->
+  <div id="view-landing" class="landing-page">
+    <div class="landing-header">
+      <div class="logo-container">
+        <span class="logo-icon"></span>
+        <span>PAC</span>
+      </div>
+      <button class="btn btn-secondary" onclick="switchView('view-auth')">Sign In</button>
+    </div>
+    <div class="landing-hero animate-fade">
+      <h1 class="text-gradient">Your AI knows your digital world.</h1>
+      <p>Connect Gmail, GitHub, Calendar, and files. PAC builds a privacy-first long-term memory, automatically prioritizing what matters most to your day.</p>
+      <div style="display: flex; gap: 16px; margin-top: 10px;">
+        <button class="btn btn-primary" onclick="switchView('view-auth', 'register')">Get Started for Free</button>
+        <button class="btn btn-secondary" onclick="alert('PAC is a privacy-first AI Companion. All ingestion and indexing runs locally or with explicit user control.')">
+          <i class="fa-solid fa-shield-halved"></i> Privacy First
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 2. LOGIN / SIGNUP VIEW -->
+  <!-- ============================================================ -->
+  <div id="view-auth" class="auth-container" style="display: none;">
+    <div class="auth-box glass-panel animate-fade">
+      <div class="auth-header">
+        <div class="logo-icon" style="margin: 0 auto;"></div>
+        <h2 id="auth-title">Welcome Back</h2>
+        <p id="auth-subtitle">Enter your email to access your personal workspace</p>
+      </div>
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+        <div class="form-group" id="group-display-name" style="display: none;">
+          <label class="form-label">Display Name</label>
+          <input type="text" id="auth-display-name" class="form-input" placeholder="Akansh Gupta">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email address</label>
+          <input type="email" id="auth-email" class="form-input" placeholder="akansh@gmail.com" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Continue</button>
+      </form>
+      <div style="text-align: center; margin-top: 20px; font-size: 0.8rem; color: var(--text-secondary);">
+        <span id="auth-toggle-text">Don't have an account?</span>
+        <a href="#" id="auth-toggle-link" style="color: var(--color-accent); text-decoration: none; font-weight: 600;" onclick="toggleAuthMode(event)">Sign Up</a>
+      </div>
+      <div style="text-align: center; margin-top: 12px;">
+        <a href="#" style="color: var(--text-muted); text-decoration: none; font-size: 0.75rem;" onclick="switchView('view-landing')">Back to Home</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 3. ONBOARDING VIEW -->
+  <!-- ============================================================ -->
+  <div id="view-onboarding" class="auth-container" style="display: none;">
+    <div class="auth-box glass-panel animate-fade" style="max-width: 500px;">
+      <div class="auth-header">
+        <div class="logo-icon" style="margin: 0 auto;"></div>
+        <h2>Configure Your Companion</h2>
+        <p>Set up your workspace and select initial data integrations</p>
+      </div>
+      <form id="onboarding-form" onsubmit="handleOnboardingSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">What should PAC call you?</label>
+          <input type="text" id="onboard-name" class="form-input" placeholder="Akansh" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Select data sources to authorize</label>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 0.9rem;">
+              <input type="checkbox" id="onboard-source-gmail" checked style="accent-color: var(--color-primary);">
+              <i class="fa-solid fa-envelope" style="color: #ef4444; width: 16px;"></i> Gmail (Read-only)
+            </label>
+            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 0.9rem;">
+              <input type="checkbox" id="onboard-source-github" checked style="accent-color: var(--color-primary);">
+              <i class="fa-brands fa-github" style="width: 16px;"></i> GitHub Activity (Public & Org repos)
+            </label>
+            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 0.9rem;">
+              <input type="checkbox" id="onboard-source-calendar" checked style="accent-color: var(--color-primary);">
+              <i class="fa-solid fa-calendar-days" style="color: #3b82f6; width: 16px;"></i> Google Calendar
+            </label>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 15px;">Complete Setup</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MAIN APPLICATION VIEW -->
+  <!-- ============================================================ -->
+  <div id="view-app" style="display: none; width: 100%;">
+    <div id="app-container">
+      
+      <!-- Side Navigation Bar -->
+      <aside>
+        <div class="logo-container">
+          <span class="logo-icon"></span>
+          <span>PAC Companion</span>
+        </div>
+        
+        <div class="nav-menu">
+          <a class="nav-item active" onclick="navigate('tab-dashboard')" id="nav-tab-dashboard">
+            <i class="fa-solid fa-chart-line"></i> Dashboard
+          </a>
+          <a class="nav-item" onclick="navigate('tab-chat')" id="nav-tab-chat">
+            <i class="fa-solid fa-comment-dots"></i> AI Chat
+          </a>
+          <a class="nav-item" onclick="navigate('tab-memories')" id="nav-tab-memories">
+            <i class="fa-solid fa-brain"></i> Memory Engine
+          </a>
+          <a class="nav-item" onclick="navigate('tab-tasks')" id="nav-tab-tasks">
+            <i class="fa-solid fa-list-check"></i> Tasks
+          </a>
+          <a class="nav-item" onclick="navigate('tab-events')" id="nav-tab-events">
+            <i class="fa-solid fa-calendar-day"></i> Calendar Events
+          </a>
+          <a class="nav-item" onclick="navigate('tab-projects')" id="nav-tab-projects">
+            <i class="fa-solid fa-diagram-project"></i> Projects
+          </a>
+          <a class="nav-item" onclick="navigate('tab-connectors')" id="nav-tab-connectors">
+            <i class="fa-solid fa-link"></i> Connected Sources
+          </a>
+          <a class="nav-item" onclick="navigate('tab-settings')" id="nav-tab-settings">
+            <i class="fa-solid fa-sliders"></i> Settings
+          </a>
+          <a class="nav-item" onclick="navigate('tab-privacy')" id="nav-tab-privacy">
+            <i class="fa-solid fa-user-shield"></i> Privacy & Audit
+          </a>
+        </div>
+        
+        <div class="user-profile">
+          <div class="user-avatar" id="profile-avatar">A</div>
+          <div style="flex-grow: 1;">
+            <div style="font-weight: 700;" id="profile-name">Akansh Gupta</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);" id="profile-email">akansh@gmail.com</div>
+          </div>
+          <a href="#" style="color: var(--text-muted);" onclick="handleSignOut(event)" title="Sign Out">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </a>
+        </div>
+      </aside>
+
+      <!-- Main Workspace -->
+      <main>
+        
+        <!-- Header -->
+        <header>
+          <div class="header-title">
+            <h1 id="current-view-title">Dashboard</h1>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-secondary" onclick="syncAllConnectors()" title="Sync all sources">
+              <i class="fa-solid fa-rotate"></i> Sync Data
+            </button>
+            <div style="position: relative;" id="notif-bell-container" onclick="toggleNotifications()">
+              <button class="btn btn-secondary btn-icon" style="position: relative;">
+                <i class="fa-regular fa-bell"></i>
+                <span id="notif-badge" style="display: none; position: absolute; top: 0; right: 0; width: 8px; height: 8px; background: var(--color-critical); border-radius: 50%;"></span>
+              </button>
+              
+              <!-- Notifications Popover -->
+              <div id="notif-popover" class="glass-panel" style="display: none; position: absolute; top: 45px; right: 0; width: 320px; z-index: 200; padding: 16px; max-height: 400px; overflow-y: auto;">
+                <h4 style="margin-bottom: 12px; font-weight: 700; display: flex; justify-content: space-between; align-items: center;">
+                  Notifications
+                  <span style="font-size: 0.7rem; color: var(--text-muted); cursor: pointer;" onclick="clearNotifications()">Clear All</span>
+                </h4>
+                <div id="notif-list" style="display: flex; flex-direction: column; gap: 10px;">
+                  <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 20px 0;">No new notifications.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Main Inner Scroll Content -->
+        <div id="workspace-content" class="content-wrapper">
+          
+          <!-- ============================================================ -->
+          <!-- 4. DASHBOARD VIEW (TAB) -->
+          <!-- ============================================================ -->
+          <div id="tab-dashboard" class="animate-fade">
+            <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 24px;">
+              Good morning, <span id="dash-greeting-name">Akansh</span>.
+            </h2>
+            
+            <!-- AI Recommendation Hero Card -->
+            <div class="ai-recommendation-hero">
+              <div class="ai-rec-glow"></div>
+              <div class="ai-rec-avatar">
+                <i class="fa-solid fa-wand-magic-sparkles" style="color: #fff;"></i>
+              </div>
+              <div class="ai-rec-content">
+                <h3>AI Assistant Suggestion</h3>
+                <p id="dash-ai-recommendation">Welcome back! Ingest some digital sources (Gmail, GitHub, Calendar) to see dynamic, prioritized AI recommendations based on your schedule.</p>
+              </div>
+            </div>
+
+            <div class="dashboard-grid">
+              
+              <!-- Urgent Alerts Section -->
+              <div class="col-12 glass-panel" style="padding: 24px; margin-bottom: 10px; display: none;" id="alert-panel">
+                <h4 style="margin-bottom: 16px; color: var(--color-critical); font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-triangle-exclamation"></i> CRITICAL ACTIONS TODAY
+                </h4>
+                <div class="interactive-list" id="dash-alerts-list"></div>
+              </div>
+
+              <!-- Important Today -->
+              <div class="col-8 glass-panel" style="padding: 24px;">
+                <h4 style="margin-bottom: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-star" style="color: var(--color-medium);"></i> Important Updates Today
+                </h4>
+                <div class="interactive-list" id="dash-important-list">
+                  <div style="font-size: 0.9rem; color: var(--text-muted); padding: 20px 0; text-align: center;">No updates parsed yet. Connect sources below to ingest.</div>
+                </div>
+              </div>
+
+              <!-- Connect Quick Card -->
+              <div class="col-4 glass-panel" style="padding: 24px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <h4 style="margin-bottom: 8px; font-weight: 700;">Connect Integrations</h4>
+                  <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
+                    Integrate Gmail, GitHub, and Calendar to automatically generate memory nodes and tasks.
+                  </p>
+                </div>
+                <button class="btn btn-primary" onclick="navigate('tab-connectors')">
+                  <i class="fa-solid fa-plug"></i> Manage Sources
+                </button>
+              </div>
+
+              <!-- Pending Tasks -->
+              <div class="col-6 glass-panel" style="padding: 24px; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                  <h4 style="font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-circle-check" style="color: var(--color-low);"></i> Pending Tasks
+                  </h4>
+                  <span style="font-size: 0.75rem; color: var(--color-accent); cursor: pointer; font-weight: 600;" onclick="navigate('tab-tasks')">View All</span>
+                </div>
+                <div class="interactive-list" id="dash-tasks-list">
+                  <div style="font-size: 0.9rem; color: var(--text-muted); padding: 20px 0; text-align: center;">No pending tasks.</div>
+                </div>
+              </div>
+
+              <!-- Upcoming Events -->
+              <div class="col-6 glass-panel" style="padding: 24px; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                  <h4 style="font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-calendar" style="color: var(--color-accent);"></i> Upcoming Events
+                  </h4>
+                  <span style="font-size: 0.75rem; color: var(--color-accent); cursor: pointer; font-weight: 600;" onclick="navigate('tab-events')">View All</span>
+                </div>
+                <div class="interactive-list" id="dash-events-list">
+                  <div style="font-size: 0.9rem; color: var(--text-muted); padding: 20px 0; text-align: center;">No scheduled events.</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ============================================================ -->
+          <!-- 5. AI CHAT VIEW (TAB) -->
+          <!-- ============================================================ -->
+          <div id="tab-chat" class="animate-fade" style="display: none;">
+            <div class="chat-container">
+              
+              <!-- Chat Area -->
+              <div class="chat-messages" id="chat-messages-container">
+                <!-- Companion Welcome -->
+                <div class="chat-bubble ai">
+                  <div class="chat-avatar"><i class="fa-solid fa-wand-magic-sparkles" style="color: #fff; font-size: 0.9rem;"></i></div>
+                  <div class="chat-bubble-content">
+                    Hi, I'm PAC. I have analyzed your email, calendar, and GitHub activities. How can I help you today?
+                    <div class="chat-citations" style="display: none;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Input Area -->
+              <div class="chat-input-area">
+                <!-- Suggested Questions Chips -->
+                <div class="suggested-chips">
+                  <div class="chip" onclick="submitSuggestedQuery('What should I know today?')">What should I know today?</div>
+                  <div class="chip" onclick="submitSuggestedQuery('Did I receive any interview invitations?')">Did I receive any interview invitations?</div>
+                  <div class="chip" onclick="submitSuggestedQuery('What tasks are pending?')">What tasks are pending?</div>
+                  <div class="chip" onclick="submitSuggestedQuery('What happened in my projects?')">What happened in my projects?</div>
+                  <div class="chip" onclick="submitSuggestedQuery('Who do I need to reply to?')">Who do I need to reply to?</div>
+                </div>
+                
+                <form id="chat-form" onsubmit="handleChatSubmit(event)">
+                  <div class="chat-input-box">
+                    <input type="text" id="chat-input" placeholder="Ask PAC anything..." autocomplete="off">
+                    <button type="submit" class="btn btn-primary btn-icon" style="width: 44px; height: 44px; border-radius: 12px;">
+                      <i class="fa-solid fa-arrow-up"></i>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ============================================================ -->
+          <!-- 6. MEMORIES VIEW (TAB) -->
+          <!-- ============================================================ -->
+          <div id="tab-memories" class="animate-fade" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+              <div>
+                <h3 style="font-size: 1.25rem; font-weight: 700;">Long-term Memory Engine</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Filter and explore memory nodes extracted by the companion agents.</p>
+              </div>
+              <button class="btn btn-secondary" onclick="triggerOptimization()">
+                <i class="fa-solid fa-broom-ball"></i> Clean & Optimize Memory
+              </button>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="glass-panel" style="padding: 20px; margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+              <div style="flex-grow: 1; min-width: 200px;">
+                <label class="form-label">Search keywords</label>
+                <input type="text" id="memory-search-keyword" class="form-input" placeholder="Type to filter..." oninput="loadMemories()">
+              </div>
+              <div style="width: 150px;">
+                <label class="form-label">Type</label>
+                <select id="memory-filter-type" class="form-input" onchange="loadMemories()">
+                  <option value="">All Types</option>
+                  <option value="fact">Fact</option>
+                  <option value="task">Task</option>
+                  <option value="event">Event</option>
+                  <option value="project">Project</option>
+                </select>
+              </div>
+              <div style="width: 150px;">
+                <label class="form-label">Source</label>
+                <select id="memory-filter-source" class="form-input" onchange="loadMemories()">
+                  <option value="">All Sources</option>
+                  <option value="gmail">Gmail</option>
+                  <option value="github">GitHub</option>
+                  <option value="calendar">Calendar</option>
+                  <option value="manual">Manual / Chat</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Memory Grid List -->
+            <div class="interactive-list" id="memories-grid-list">
+              <div style="font-size: 0.9rem; color: var(--text-muted); padding: 40px 0; text-align: center;">No memories found. Connect sources and trigger synchronization.</div>
+            </div>
+          </div>
+
+          <!-- ============================================================ -->
+          <!-- 7. TASKS VIEW (TAB) -->
+          <!-- ============================================================ -->
+          <div id="tab-tasks" class="animate-fade" style="display: none;">
+            <div class="dashboard-grid">
+              
+              <!-- Add Manual Task Form -->
+              <div class="col-4 glass-panel" style="padding: 24px; height: fit-content;">
+                <h4 style="margin-bottom: 20px; font-weight: 700;">Add Manual Task</h4>
+                <form id="task-form" onsubmit="handleCreateTask(event)">
+                  <div class="form-group">
+                    <label class="form-label">Task Title</label>
+                    <input type="text" id="task-title" class="form-input" placeholder="Review project design docs" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="task-desc" class="form-input" placeholder="Details about this task..." style="height: 100px; resize: none;"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Due Date</label>
+                    <input type="datetime-local" id="task-duedate" class="form-input">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Priority</label>
+                    <select id="task-priority" class="form-input">
+                      <option value="1">1 - Critical</option>
+                      <option value="2">2 - High</option>
+                      <option value="3" selected>3 - Medium</option>
+                      <option value="4">4 - Low</option>
+                      <option value="5">5 - Very Low</option>
+                    </select>
+                  </div>
+                  <button type="submit" class="btn btn-primary" style="width: 100%;">Create Task</button>
+                </form>
+              </div>
+
+              <!-- Task List Manager -->
+              <div class="col-8 glass-panel" style="padding: 24px;">
+                <h4 style="margin-bottom: 20px; font-weight: 700;">Pending & Active Tasks</h4>
+                <div class="interactive-list" id="tasks-manager-list">
+                  <div style="font-size: 0.9rem; color: var(--text-muted); padding: 40px 0; text-align: center;">No tasks. Write a task to create it manually.</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ============================================================ -->
+          <!-- 8. EVENTS VIEW (TAB) -->
+          <!-- ============================================================ -->
+          <div id="tab-events" class="animate-fade" style="display: none;">
+            <div class="dashboard-grid">
+              
+              <!-- Add Manual Event Form -->
+              <div class="col-4 glass-panel" style="padding: 24px; height: fit-content;">
+                <h4 style="margin-bottom: 20px; font-weight: 700;">Add Calendar Event</h4>
+                <form id="event-form" onsubmit="handleCreateEvent(event)">
+                  <div class="form-group">
+                    <label class="form-label">Event Name</label>
+                    <input type="text" id="event-title" class="form-input" placeholder="Google Technical Interview" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="event-desc" class="form-input" placeholder="Notes or agenda..." style="height: 80px; resize: none;"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Location / Meet Link</label>
+                    <input type="text" id="event-location" class="form-input" placeholder="https://meet.google.com/abc-xyz">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Event Date & Time</label>
+                    <input type="datetime-local" id="event-date" class="form-input" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Duration (Minutes)</label>
+                    <input type="number" id="event-duration" class="form-input" value="60" min="5">
+                  </div>
+                  <button type="submit" class="btn btn-primary" style="width: 100%;">Create Event</button>
+                </form>
+              </div>
+
+              <!-- Events Manager List -->
+              <div class="col-8 glass-panel" style="padding: 24px;">
+                <h4 style="margin-bottom: 20px; font-weight: 700;">Scheduled Events</h4>
+                <div class="interactive-list" id="events-manager-list">
+                  <div style="font-size: 0.9rem; color: var(--text-muted); padding: 40px 0; text-align: center;">No scheduled events.</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ============================================================ -->
+          <!-- 9. PROJECTS VIEW (TAB) -->
+          <!-- ============================================================ -->
+          <div id="tab-projects" class="animate-fade" style="display: none;">
+            <div class="dashboard-grid">
+              
+              <!-- Add Manual Project -->
+              <div class="col-4 glass-panel" style="padding: 24px; height: fit-content;">
+                <h4 style="margin-bottom: 20px; font-weight: 700;">Create Project Workspace</h4>
+                <form id="project-form" onsubmit="handleCreateProject(event)">
+                  <div class="form-group">
+                    <label class="form-label">Project Name</label>
+                    <input type="text" id="project-name" class="form-input" placeholder="PAC Companion" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="project-desc" class="form-input" placeholder="What is this project about?" style="height: 100px; resize: none;"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Field / Tag</label>
+                    <input type="text" id="project-field" class="form-input" placeholder="AI Infrastructure">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">GitHub Repository</label>
+                    <input type="text" id="project-github" class="form-input" placeholder="akansh/pac-agent-engine">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select id="project-status" class="form-input">
+                      <option value="planning">Planning</option>
+                      <option value="active" selected>Active</option>
+                      <option value="completed">Completed</option>
+                      <option value="abandoned">Abandoned</option>
+                    </select>
+                  </div>
+                  <button type="submit" class="btn btn-primary" style="width: 100%;">Create Project</button>
+                </form>
+              </div>
+
+              <!-- Projects Grid -->
+              <div class="col-8 glass-panel" style="padding: 24px;">
+                <h4 style="margin-bottom: 20px; font-weight: 700;">Active Projects</h4>
+                <div class="interactive-list" id="projects-manager-list">
+                  <div style="font-size: 0.9rem; color: var(--text-muted); padding: 40px 0; text-align: center;">No active projects recorded.</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ============================================================ -->
+          <!-- 10. CONNECTED SOURCES VIEW (TAB) -->
+          <!-- ============================================================ -->
+          <div id="tab-connectors" class="animate-fade" style="display: none;">
+            <div class="connector-grid">
+              
+              <!-- Gmail Card -->
+              <div class="connector-card glass-panel">
+                <div class="connector-header">
+                  <div class="connector-icon" style="color: #ef4444;"><i class="fa-solid fa-envelope"></i></div>
+                  <div class="connector-details">
+                    <h4>Gmail Integrations</h4>
+                    <p id="gmail-sync-time">Last synchronized: Never</p>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                  <button class="btn btn-secondary btn-icon" id="gmail-toggle-btn" onclick="toggleConnector('gmail')">
+                    <i class="fa-solid fa-link-slash"></i>
+                  </button>
+                  <button class="btn btn-primary" id="gmail-sync-btn" onclick="syncSource('gmail')" style="flex-grow: 1;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Sync Mails
+                  </button>
+                </div>
+              </div>
+
+              <!-- GitHub Card -->
+              <div class="connector-card glass-panel">
+                <div class="connector-header">
+                  <div class="connector-icon" style="color: #f3f4f6;"><i class="fa-brands fa-github"></i></div>
+                  <div class="connector-details">
+                    <h4>GitHub Activities</h4>
+                    <p id="github-sync-time">Last synchronized: Never</p>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                  <button class="btn btn-secondary btn-icon" id="github-toggle-btn" onclick="toggleConnector('github')">
+                    <i class="fa-solid fa-link-slash"></i>
+                  </button>
+                  <button class="btn btn-primary" id="github-sync-btn" onclick="syncSource('github')" style="flex-grow: 1;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Sync Repos
+                  </button>
+                </div>
+              </div>
+
+              <!-- Google Calendar Card -->
+              <div class="connector-card glass-panel">
+                <div class="connector-header">
+                  <div class="connector-icon" style="color: #3b82f6;"><i class="fa-solid fa-calendar-days"></i></div>
+                  <div class="connector-details">
+                    <h4>Google Calendar</h4>
+                    <p id="calendar-sync-time">Last synchronized: Never</p>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                  <button class="btn btn-secondary btn-icon" id="calendar-toggle-btn" onclick="toggleConnector('calendar')">
+                    <i class="fa-solid fa-link-slash"></i>
+                  </button>
+                  <button class="btn btn-primary" id="calendar-sync-btn" onclick="syncSource('calendar')" style="flex-grow: 1;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Sync Calendar
+                  </button>
+                </div>
+              </div>
+
+              <!-- Document Uploader Card -->
+              <div class="connector-card glass-panel">
+                <div class="connector-header">
+                  <div class="connector-icon" style="color: #10b981;"><i class="fa-solid fa-file-pdf"></i></div>
+                  <div class="connector-details">
+                    <h4>Resume & Documents</h4>
+                    <p id="document-sync-time">Last synchronized: Never</p>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                  <button class="btn btn-secondary btn-icon" id="document-toggle-btn" onclick="toggleConnector('document')">
+                    <i class="fa-solid fa-link-slash"></i>
+                  </button>
+                  <button class="btn btn-primary" id="document-sync-btn" onclick="syncSource('document')" style="flex-grow: 1;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Ingest Document
+                  </button>
+                </div>
+              </div>
+
+              <!-- Package Delivery Card -->
+              <div class="connector-card glass-panel">
+                <div class="connector-header">
+                  <div class="connector-icon" style="color: #eab308;"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                  <div class="connector-details">
+                    <h4>Package Deliveries</h4>
+                    <p id="delivery-sync-time">Last synchronized: Never</p>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                  <button class="btn btn-secondary btn-icon" id="delivery-toggle-btn" onclick="toggleConnector('delivery')">
+                    <i class="fa-solid fa-link-slash"></i>
+                  </button>
+                  <button class="btn btn-primary" id="delivery-sync-btn" onclick="syncSource('delivery')" style="flex-grow: 1;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Sync Orders
+                  </button>
+                </div>
+              </div>
+
+              <!-- WhatsApp Card (Personal Web Session Authorization) -->
+              <div class="connector-card glass-panel">
+                <div class="connector-header">
+                  <div class="connector-icon" style="color: #25d366;"><i class="fa-brands fa-whatsapp"></i></div>
+                  <div class="connector-details">
+                    <h4>Personal WhatsApp Account</h4>
+                    <p id="whatsapp-sync-time">Last synchronized: Never</p>
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">
+                    <span><i class="fa-solid fa-robot"></i> AI Auto-Reply:</span>
+                    <label class="switch" style="position: relative; display: inline-block; width: 36px; height: 20px;">
+                      <input type="checkbox" id="whatsapp-autoreply-toggle" onchange="toggleWhatsAppAutoReply(this.checked)" checked style="opacity: 0; width: 0; height: 0;">
+                      <span style="position: absolute; cursor: pointer; top:0; left:0; right:0; bottom:0; background-color: #4A5568; transition: .4s; border-radius: 20px;" id="autoreply-slider"></span>
+                    </label>
+                  </div>
+                  <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <button class="btn btn-secondary btn-icon" id="whatsapp-toggle-btn" onclick="openWhatsAppQrModal()" title="Link Personal WhatsApp Account via QR Code">
+                      <i class="fa-solid fa-qrcode"></i>
+                    </button>
+                    <button class="btn btn-primary" id="whatsapp-sync-btn" onclick="syncSource('whatsapp')" style="flex-grow: 1;">
+                      <i class="fa-solid fa-arrows-rotate"></i> Sync Chat
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ============================================================ -->
+          <!-- 11. SETTINGS VIEW (TAB) -->
+          <!-- ============================================================ -->
+          <div id="tab-settings" class="animate-fade" style="display: none;">
+            <div class="dashboard-grid">
+              
+              <!-- System Preferences -->
+              <div class="col-4 glass-panel" style="padding: 24px;">
+                <h4 style="margin-bottom: 20px; font-weight: 700;"><i class="fa-solid fa-user-gear"></i> System Preferences</h4>
+                <div class="form-group">
+                  <label class="form-label">Active Model</label>
+                  <select class="form-input" disabled>
+                    <option>Llama-3.3-70b-versatile (Groq)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Primary Timezone</label>
+                  <select id="setting-timezone" class="form-input">
+                    <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                    <option value="America/New_York">America/New_York (EST)</option>
+                    <option value="Europe/London">Europe/London (GMT)</option>
+                  </select>
+                </div>
+                <button class="btn btn-secondary" onclick="alert('System settings updated successfully!')" style="width: 100%;">Save Preferences</button>
+              </div>
+
+              <!-- Integration Credentials -->
+              <div class="col-8 glass-panel" style="padding: 24px;">
+                <h4 style="margin-bottom: 20px; font-weight: 700;"><i class="fa-solid fa-key"></i> Live Integration Credentials</h4>
+                <form id="settings-credentials-form" onsubmit="handleSaveCredentials(event)">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                      <h5 style="margin-bottom: 12px; font-weight: 700; color: var(--color-accent); font-size: 0.9rem;">GitHub Account</h5>
+                      <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" id="setting-github-username" class="form-input" placeholder="e.g. akansh">
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label">Personal Access Token</label>
+                        <input type="password" id="setting-github-token" class="form-input" placeholder="ghp_...">
+                      </div>
+                    </div>
+                    <div>
+                      <h5 style="margin-bottom: 12px; font-weight: 700; color: var(--color-accent); font-size: 0.9rem;">Gmail (IMAP)</h5>
+                      <div class="form-group">
+                        <label class="form-label">Gmail Email Address</label>
+                        <input type="email" id="setting-gmail-user" class="form-input" placeholder="e.g. user@gmail.com">
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label">16-Digit App Password</label>
+                        <input type="password" id="setting-gmail-password" class="form-input" placeholder="abcd efgh ijkl mnop">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-group" style="margin-top: 10px;">
+                    <h5 style="margin-bottom: 12px; font-weight: 700; color: var(--color-accent); font-size: 0.9rem;">Google Calendar</h5>
+                    <label class="form-label">Secret Address in iCal format (URL)</label>
+                    <input type="text" id="setting-calendar-url" class="form-input" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics">
+                  </div>
+                  <div class="form-group" style="margin-top: 10px;">
+                    <h5 style="margin-bottom: 12px; font-weight: 700; color: #25d366; font-size: 0.9rem;"><i class="fa-brands fa-whatsapp"></i> Personal WhatsApp Configuration</h5>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                      <div>
+                        <label class="form-label">WhatsApp Mobile Number</label>
+                        <input type="text" id="setting-whatsapp-number" class="form-input" placeholder="e.g. +919876543210">
+                      </div>
+                      <div>
+                        <label class="form-label">Auto-Reply Mode</label>
+                        <select id="setting-whatsapp-autoreply" class="form-input">
+                          <option value="true">Enabled (Auto-read & Auto-respond)</option>
+                          <option value="false">Disabled (Memory Ingest Only)</option>
+                        </select>
+                      </div>
+                      <div style="grid-column: span 2; margin-top: 10px;">
+                        <label class="form-label"><i class="fa-solid fa-user-check"></i> Allowed Contacts for AI Auto-Reply</label>
+                        <input type="text" id="setting-whatsapp-allowed-contacts" class="form-input" placeholder="e.g. Shivamsatyam, Alex, +919876543210 (Comma-separated names/numbers. Leave blank to reply to all contacts)">
+                      </div>
+                    </div>
+                  </div>
+                  <button type="submit" id="save-credentials-btn" class="btn btn-primary" style="float: right;">Save Credentials</button>
+                </form>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ============================================================ -->
+          <!-- 12. PRIVACY & AUDIT LOGS VIEW (TAB) -->
+          <!-- ============================================================ -->
+          <div id="tab-privacy" class="animate-fade" style="display: none;">
+            <div class="dashboard-grid">
+              
+              <!-- Privacy Controls -->
+              <div class="col-4 glass-panel" style="padding: 24px; height: fit-content;">
+                <h4 style="margin-bottom: 16px; color: var(--color-accent); font-weight: 700;">
+                  <i class="fa-solid fa-shield-halved"></i> Privacy Controls
+                </h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
+                  All processing of details runs in compliance with privacy regulations. You can view all memory modifications or erase data at any time.
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <button class="btn btn-secondary" onclick="clearLocalMemoryOnly()" style="justify-content: flex-start;">
+                    <i class="fa-solid fa-eraser"></i> Erase Ingested Memory
+                  </button>
+                  <button class="btn btn-danger" onclick="deleteAccountPermanently()" style="justify-content: flex-start;">
+                    <i class="fa-solid fa-trash-can"></i> Delete Account Permanently
+                  </button>
+                </div>
+              </div>
+
+              <!-- Audit Logs -->
+              <div class="col-8 glass-panel" style="padding: 24px;">
+                <h4 style="margin-bottom: 20px; font-weight: 700;">Security Audit Logs</h4>
+                <div class="interactive-list" id="audit-logs-container" style="max-height: 450px; overflow-y: auto;">
+                  <div style="font-size: 0.9rem; color: var(--text-muted); padding: 40px 0; text-align: center;">No log actions recorded yet.</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <!-- WhatsApp QR Code Pairing Modal -->
+  <div id="whatsapp-qr-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 9999; justify-content: center; align-items: center;">
+    <div class="glass-panel" style="padding: 30px; max-width: 450px; width: 90%; text-align: center; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="font-weight: 700; color: #25d366; margin: 0;"><i class="fa-brands fa-whatsapp"></i> Link Personal WhatsApp</h3>
+        <button class="btn btn-secondary btn-icon" onclick="closeWhatsAppQrModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5;">
+        Open WhatsApp on your phone > <b>Settings</b> > <b>Linked Devices</b> > <b>Link a Device</b>, then scan the QR code below to connect your personal WhatsApp account.
+      </p>
+      <div id="whatsapp-qr-container" style="background: white; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 20px; min-width: 220px; min-height: 220px;">
+        <div id="whatsapp-qr-spinner" style="padding: 60px 0; color: #333;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Generating QR Code...</div>
+        <img id="whatsapp-qr-image" style="display: none; width: 220px; height: 220px;" alt="WhatsApp QR Code">
+      </div>
+      <div style="font-size: 0.8rem; color: var(--text-muted);" id="whatsapp-qr-status">Waiting for WhatsApp Web scan...</div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
