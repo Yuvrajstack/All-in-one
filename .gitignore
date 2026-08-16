@@ -2,5 +2,6 @@ node_modules/
 dist/
 .env
 baileys_auth_info/
+whatsapp_auth/
 *.log
 .DS_Store
