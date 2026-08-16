@@ -177,7 +177,7 @@ export class WhatsAppService {
           const isLoggedOut = statusCode === DisconnectReason.loggedOut
           console.log(`⚠️ WhatsApp connection closed (status: ${statusCode}). Reconnecting: ${!isLoggedOut}`)
 
-          if (isLoggedOut) {
+          if (isLoggedOut || statusCode === 401) {
             console.log('⚠️ WhatsApp session logged out. Clearing auth directory for clean pairing...')
             try {
               if (fs.existsSync(this.sessionDir)) {
@@ -185,7 +185,11 @@ export class WhatsAppService {
               }
             } catch (e) {}
           } else {
-            setTimeout(() => this.initConnection(), 5000)
+            console.log('🔄 Scheduling instant auto-reconnect in 3s...')
+            setTimeout(() => {
+              this.isConnecting = false
+              this.initConnection()
+            }, 3000)
           }
         }
       })
