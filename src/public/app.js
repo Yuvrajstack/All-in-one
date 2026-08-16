@@ -164,19 +164,27 @@ async function handleAuthSubmit(e) {
 
 function handleOnboardingSubmit(e) {
   e.preventDefault()
-  const name = document.getElementById('onboard-name').value.trim()
-  currentUser.display_name = name
-  localStorage.setItem('pac_user', JSON.stringify(currentUser))
+  try {
+    const nameInput = document.getElementById('onboard-name')
+    const name = nameInput ? nameInput.value.trim() : ''
+    
+    if (!currentUser) {
+      currentUser = { id: 'default-user-id', email: 'kabadwalyuvraj@gmail.com', display_name: name || 'User' }
+    } else if (name) {
+      currentUser.display_name = name
+    }
+    localStorage.setItem('pac_user', JSON.stringify(currentUser))
 
-  // Ingest initial checked sources
-  const gmailSync = document.getElementById('onboard-source-gmail').checked
-  const githubSync = document.getElementById('onboard-source-github').checked
-  const calSync = document.getElementById('onboard-source-calendar').checked
+    const gmailSync = document.getElementById('onboard-source-gmail')
+    const githubSync = document.getElementById('onboard-source-github')
+    const calSync = document.getElementById('onboard-source-calendar')
 
-  // Simple background initialization triggers
-  if (gmailSync) syncSource('gmail')
-  if (githubSync) syncSource('github')
-  if (calSync) syncSource('calendar')
+    if (gmailSync && gmailSync.checked) syncSource('gmail')
+    if (githubSync && githubSync.checked) syncSource('github')
+    if (calSync && calSync.checked) syncSource('calendar')
+  } catch (err) {
+    console.error('Onboarding notice:', err)
+  }
 
   showAppView()
 }
