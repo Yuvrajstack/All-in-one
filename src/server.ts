@@ -63,19 +63,25 @@ function loadStoredCredentials() {
     } catch (err: any) {
       console.error('Failed to parse credentials.json:', err.message)
     }
-  } else {
-    // fallback to env
-    credentialsStore.githubUsername = process.env.GITHUB_USERNAME || ''
-    credentialsStore.githubToken = process.env.GITHUB_TOKEN || ''
-    credentialsStore.gmailUser = process.env.GMAIL_USER || ''
-    credentialsStore.gmailPassword = process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASS || ''
-    credentialsStore.calendarUrl = process.env.CALENDAR_ICAL_URL || ''
-    credentialsStore.whatsappNumber = process.env.WHATSAPP_NUMBER || ''
-    credentialsStore.whatsappApiKey = process.env.WHATSAPP_API_KEY || ''
-    credentialsStore.whatsappAutoReply = process.env.WHATSAPP_AUTO_REPLY !== 'false'
-    credentialsStore.whatsappAllowedContacts = process.env.WHATSAPP_ALLOWED_CONTACTS || ''
-    console.log('ℹ️ No credentials.json found, loaded defaults from .env')
   }
+
+  // Environment variables always override and take precedence
+  if (process.env.GITHUB_USERNAME) credentialsStore.githubUsername = process.env.GITHUB_USERNAME
+  if (process.env.GITHUB_TOKEN) credentialsStore.githubToken = process.env.GITHUB_TOKEN
+  if (process.env.GMAIL_USER) credentialsStore.gmailUser = process.env.GMAIL_USER
+  if (process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASS) {
+    credentialsStore.gmailPassword = process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASS || ''
+  }
+  if (process.env.CALENDAR_ICAL_URL) credentialsStore.calendarUrl = process.env.CALENDAR_ICAL_URL
+  if (process.env.WHATSAPP_NUMBER) credentialsStore.whatsappNumber = process.env.WHATSAPP_NUMBER
+  if (process.env.WHATSAPP_API_KEY) credentialsStore.whatsappApiKey = process.env.WHATSAPP_API_KEY
+  if (process.env.WHATSAPP_AUTO_REPLY !== undefined) {
+    credentialsStore.whatsappAutoReply = process.env.WHATSAPP_AUTO_REPLY !== 'false'
+  }
+  if (process.env.WHATSAPP_ALLOWED_CONTACTS) {
+    credentialsStore.whatsappAllowedContacts = process.env.WHATSAPP_ALLOWED_CONTACTS
+  }
+
   WhatsAppService.getInstance().setAutoReply(credentialsStore.whatsappAutoReply)
 }
 
