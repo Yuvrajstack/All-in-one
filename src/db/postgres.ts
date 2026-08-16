@@ -8,6 +8,7 @@ export const inMemoryDB = {
   tasks: [] as any[],
   events: [] as any[],
   projects: [] as any[],
+  whatsappSessions: new Map<string, string>(),
 }
 
 let useInMemory = false
@@ -17,6 +18,20 @@ class InMemoryPool {
   async query(text: string, values: any[] = []): Promise<{ rows: any[] }> {
     const sql = text.trim().replace(/\s+/g, ' ');
     const lowerSql = sql.toLowerCase();
+
+    if (lowerSql.includes('whatsapp_auth_sessions')) {
+      if (lowerSql.startsWith('create table')) {
+        return { rows: [] }
+      }
+      if (lowerSql.startsWith('select filename, content')) {
+        const rows = Array.from(inMemoryDB.whatsappSessions.entries()).map(([filename, content]) => ({ filename, content }))
+        return { rows }
+      }
+      if (lowerSql.startsWith('insert into whatsapp_auth_sessions')) {
+        inMemoryDB.whatsappSessions.set(values[0], values[1])
+        return { rows: [] }
+      }
+    }
 
     // SELECT 1
     if (sql === 'SELECT 1') {
