@@ -76,6 +76,7 @@ function loadStoredCredentials() {
     credentialsStore.whatsappAllowedContacts = process.env.WHATSAPP_ALLOWED_CONTACTS || ''
     console.log('ℹ️ No credentials.json found, loaded defaults from .env')
   }
+  WhatsAppService.getInstance().setAutoReply(credentialsStore.whatsappAutoReply)
 }
 
 function saveStoredCredentials() {

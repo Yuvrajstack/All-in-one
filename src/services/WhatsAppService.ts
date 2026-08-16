@@ -10,7 +10,7 @@ export class WhatsAppService {
   private isConnecting: boolean = false
   private qrCodeRaw: string | null = null
   private qrCodeDataUrl: string | null = null
-  private autoReplyEnabled: boolean = false
+  private autoReplyEnabled: boolean = true
   private sock: any = null
   private sessionDir: string = path.join(__dirname, '..', '..', 'whatsapp_auth')
   private recentMessages: Array<{ from: string; senderName: string; body: string; date: string; reply?: string }> = []
