@@ -218,11 +218,11 @@ Try going to the **Connected Sources** tab and clicking **Sync Mails** or **Sync
       const memoryBlocks = cleanedContext.split('[MEMORY').slice(1)
       let summary = `I reviewed your synced memories and found the following relevant details:\n\n`
       
-      memoryBlocks.forEach((block) => {
-        const lines = block.split('\n').map(l => l.trim())
-        const typeLine = lines.find(l => l.startsWith('type:'))?.replace('type:', '').trim() || ''
-        const sourceLine = lines.find(l => l.startsWith('source:'))?.replace('source:', '').trim() || ''
-        const contentLine = lines.find(l => l.startsWith('content:'))?.replace('content:', '').trim() || ''
+      memoryBlocks.forEach((block: string) => {
+        const lines = block.split('\n').map((l: string) => l.trim())
+        const typeLine = lines.find((l: string) => l.startsWith('type:'))?.replace('type:', '').trim() || ''
+        const sourceLine = lines.find((l: string) => l.startsWith('source:'))?.replace('source:', '').trim() || ''
+        const contentLine = lines.find((l: string) => l.startsWith('content:'))?.replace('content:', '').trim() || ''
         
         if (contentLine) {
           summary += `- **${contentLine}** (Source: ${sourceLine.toUpperCase()} / Type: ${typeLine})\n`
@@ -281,7 +281,7 @@ function createGroqClient() {
   }
 }
 
-export const groqClient = new Proxy({}, {
+export const groqClient: any = new Proxy({}, {
   get(_target, prop) {
     const client = createGroqClient()
     return (client as any)[prop]
