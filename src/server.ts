@@ -68,7 +68,7 @@ function loadStoredCredentials() {
     credentialsStore.githubUsername = process.env.GITHUB_USERNAME || ''
     credentialsStore.githubToken = process.env.GITHUB_TOKEN || ''
     credentialsStore.gmailUser = process.env.GMAIL_USER || ''
-    credentialsStore.gmailPassword = process.env.GMAIL_APP_PASSWORD || ''
+    credentialsStore.gmailPassword = process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASS || ''
     credentialsStore.calendarUrl = process.env.CALENDAR_ICAL_URL || ''
     credentialsStore.whatsappNumber = process.env.WHATSAPP_NUMBER || ''
     credentialsStore.whatsappApiKey = process.env.WHATSAPP_API_KEY || ''
@@ -100,6 +100,16 @@ async function init() {
     console.log('✅ All services initialized successfully')
   } catch (err: any) {
     console.warn('⚠️ Initialization warning:', err.message)
+  }
+
+  // Auto-start WhatsApp engine on server boot
+  try {
+    const waService = WhatsAppService.getInstance()
+    waService.setAutoReply(credentialsStore.whatsappAutoReply)
+    console.log('📱 Auto-starting WhatsApp Web Service on boot...')
+    waService.initConnection().catch((err: any) => console.error('WhatsApp init error:', err.message))
+  } catch (err: any) {
+    console.error('Failed to start WhatsApp Service:', err.message)
   }
 }
 

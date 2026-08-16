@@ -89,6 +89,17 @@ export class WhatsAppService {
           this.qrCodeRaw = qr
           this.qrCodeDataUrl = await this.generateQrDataUrl(qr)
           console.log('📱 New WhatsApp QR Code generated for personal account pairing.')
+          try {
+            const QRCode = require('qrcode')
+            const terminalQr = await QRCode.toString(qr, { type: 'terminal', small: true })
+            console.log('\n======================================================')
+            console.log('📱 SCAN THIS WHATSAPP QR CODE FROM RENDER LOGS:')
+            console.log('======================================================\n')
+            console.log(terminalQr)
+            console.log('\n======================================================\n')
+          } catch (err) {
+            // fallback if qrcode terminal fails
+          }
         }
 
         if (connection === 'open') {
