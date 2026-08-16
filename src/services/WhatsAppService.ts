@@ -133,8 +133,25 @@ export class WhatsAppService {
         syncFullHistory: false,
         markOnlineOnConnect: true,
         printQRInTerminal: false,
+        keepAliveIntervalMs: 25000,
+        connectTimeoutMs: 60000,
         logger: pinoLogger
       })
+
+      // Cloud Watchdog: Prevent zombie sockets on Render by checking activity every 30s
+      let lastActivityTime = Date.now()
+      this.sock.ev.on('connection.update', () => { lastActivityTime = Date.now() })
+      this.sock.ev.on('messages.upsert', () => { lastActivityTime = Date.now() })
+
+      const watchdogInterval = setInterval(() => {
+        if (this.isConnected && (Date.now() - lastActivityTime > 180000)) {
+          console.warn('⚠️ Cloud watchdog: Socket silent for 3m, sending keepalive ping...')
+          lastActivityTime = Date.now()
+          try {
+            this.sock.sendPresenceUpdate('available').catch(() => {})
+          } catch (e) {}
+        }
+      }, 30000)
 
       this.sock.ev.on('creds.update', async () => {
         await saveCreds()
