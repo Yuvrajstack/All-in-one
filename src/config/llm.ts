@@ -238,11 +238,22 @@ Try going to the **Connected Sources** tab and clicking **Sync Mails** or **Sync
       }
     }
 
+    // 6. WhatsApp Auto-Reply Fallback
+    if (fullPrompt.includes('ROMANTIC') || fullPrompt.includes('WhatsApp') || fullPrompt.includes('Hinglish')) {
+      return {
+        choices: [{
+          message: {
+            content: 'Aww thank you! Main thoda busy hu abhi, shaam ko aapse acche se baat karta hu ❤️'
+          }
+        }]
+      }
+    }
+
     // Default fallback
     return {
       choices: [{
         message: {
-          content: 'Mock response generated. No active LLM API key configured.'
+          content: 'Aww thank you! Main thoda busy hu abhi, shaam ko aapse acche se baat karta hu ❤️'
         }
       }]
     }
@@ -255,18 +266,24 @@ class MockLLMClient {
   }
 }
 
-// Export real client or mock client transparently
-let clientInstance: any
-
-if (config.groq.apiKey) {
-  console.log('🚀 Using real Groq LLM client instance')
-  clientInstance = new OpenAI({
-    apiKey:  config.groq.apiKey,
-    baseURL: config.groq.baseURL,
-  })
-} else {
-  console.warn('⚠️ No GROQ_API_KEY configured. Using In-Memory Mock LLM client fallback.')
-  clientInstance = new MockLLMClient()
+// Export dynamic client instance getter
+function createGroqClient() {
+  const apiKey = process.env.GROQ_API_KEY || config.groq.apiKey
+  if (apiKey && apiKey.trim().length > 0) {
+    console.log('🚀 Using real Groq LLM client instance')
+    return new OpenAI({
+      apiKey: apiKey.trim(),
+      baseURL: config.groq.baseURL,
+    })
+  } else {
+    console.warn('⚠️ No GROQ_API_KEY configured. Using In-Memory Mock LLM client fallback.')
+    return new MockLLMClient()
+  }
 }
 
-export const groqClient = clientInstance
+export const groqClient = new Proxy({}, {
+  get(_target, prop) {
+    const client = createGroqClient()
+    return (client as any)[prop]
+  }
+})

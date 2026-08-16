@@ -56,11 +56,64 @@ export class WhatsAppService {
     return { qrCodeDataUrl: this.qrCodeDataUrl, connected: this.isConnected }
   }
 
+  private async restoreSessionFromDb() {
+    try {
+      const pool = require('../db/postgres').default
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS whatsapp_auth_sessions (
+          filename VARCHAR(255) PRIMARY KEY,
+          content TEXT NOT NULL,
+          updated_at TIMESTAMP DEFAULT NOW()
+        )
+      `)
+      const res = await pool.query('SELECT filename, content FROM whatsapp_auth_sessions')
+      if (res.rows && res.rows.length > 0) {
+        this.ensureSessionDir()
+        for (const row of res.rows) {
+          const filePath = path.join(this.sessionDir, row.filename)
+          fs.writeFileSync(filePath, row.content, 'utf8')
+        }
+        console.log(`✅ Restored ${res.rows.length} WhatsApp auth session files from database!`)
+      }
+    } catch (err: any) {
+      // ignore DB restore warning
+    }
+  }
+
+  private async saveSessionToDb() {
+    try {
+      const pool = require('../db/postgres').default
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS whatsapp_auth_sessions (
+          filename VARCHAR(255) PRIMARY KEY,
+          content TEXT NOT NULL,
+          updated_at TIMESTAMP DEFAULT NOW()
+        )
+      `)
+      if (!fs.existsSync(this.sessionDir)) return
+      const files = fs.readdirSync(this.sessionDir)
+      for (const file of files) {
+        if (file.endsWith('.json')) {
+          const filePath = path.join(this.sessionDir, file)
+          const content = fs.readFileSync(filePath, 'utf8')
+          await pool.query(`
+            INSERT INTO whatsapp_auth_sessions (filename, content, updated_at)
+            VALUES ($1, $2, NOW())
+            ON CONFLICT (filename) DO UPDATE SET content = EXCLUDED.content, updated_at = NOW()
+          `, [file, content])
+        }
+      }
+    } catch (err: any) {
+      // ignore DB save error
+    }
+  }
+
   public async initConnection(): Promise<void> {
     if (this.isConnected || this.isConnecting) return
 
     this.isConnecting = true
     console.log('📱 Initializing WhatsApp Web Connection (Baileys Engine)...')
+    await this.restoreSessionFromDb()
 
     try {
       // Try importing Baileys dynamically
@@ -80,7 +133,10 @@ export class WhatsAppService {
         logger: pinoLogger
       })
 
-      this.sock.ev.on('creds.update', saveCreds)
+      this.sock.ev.on('creds.update', async () => {
+        await saveCreds()
+        await this.saveSessionToDb()
+      })
 
       this.sock.ev.on('connection.update', async (update: any) => {
         const { connection, lastDisconnect, qr } = update
@@ -108,6 +164,7 @@ export class WhatsAppService {
           this.qrCodeRaw = null
           this.qrCodeDataUrl = null
           console.log('✅ Personal WhatsApp account connected successfully!')
+          await this.saveSessionToDb()
         }
 
         if (connection === 'close') {
