@@ -59,19 +59,21 @@ export class WhatsAppAgent {
       const senderFromDigits = senderFromLower.split('@')[0].replace(/\D/g, '')
 
       const isAllowed = allowedItems.some((item: string) => {
-        const itemLower = item.toLowerCase()
+        const itemLower = item.toLowerCase().trim()
         const itemClean = itemLower.replace(/[^a-z0-9]/g, '')
         const itemDigits = item.replace(/\D/g, '')
 
-        // 1. Phone number match (stripping spaces, pluses, country codes, e.g. "+91 7505435369" vs "917505435369")
+        // 1. Robust Phone number match (compare last 10 digits to ignore +91 / 91 / 0 prefixes)
         if (itemDigits.length >= 7 && senderFromDigits.length >= 7) {
-          if (senderFromDigits.includes(itemDigits) || itemDigits.includes(senderFromDigits) || senderFromDigits.endsWith(itemDigits.slice(-10))) {
+          const item10 = itemDigits.slice(-10)
+          const sender10 = senderFromDigits.slice(-10)
+          if (item10 === sender10 || senderFromDigits.includes(itemDigits) || itemDigits.includes(senderFromDigits)) {
             return true
           }
         }
 
         // 2. Normalized name or raw substring match
-        if (itemClean && (senderNameLower.includes(itemClean) || itemClean.includes(senderNameLower) || senderFromLower.includes(itemLower))) {
+        if (itemClean && itemClean.length >= 2 && (senderNameLower.includes(itemClean) || itemClean.includes(senderNameLower) || senderFromLower.includes(itemLower))) {
           return true
         }
 
