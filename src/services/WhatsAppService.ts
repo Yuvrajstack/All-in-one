@@ -198,9 +198,9 @@ export class WhatsAppService {
             const remoteJid = msg.key.remoteJid || ''
             const senderJid = msg.key.participant || remoteJid
 
-            // ABSOLUTE HARD BLOCK: Only process 1-on-1 private contact chats ending with @s.whatsapp.net
+            // ABSOLUTE HARD BLOCK: Only process 1-on-1 private contact chats
             // Hard skip group chats (@g.us), broadcast channels (@newsletter), status updates, etc.
-            if (!remoteJid.endsWith('@s.whatsapp.net') || msg.key.participant) {
+            if (remoteJid.endsWith('@g.us') || msg.key.participant || remoteJid.includes('@newsletter') || remoteJid === 'status@broadcast') {
               if (remoteJid.endsWith('@g.us')) {
                 console.log(`⛔ Group chat message blocked from ${remoteJid}. Auto-reply disabled for groups.`)
               }
