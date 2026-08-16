@@ -119,7 +119,7 @@ export class WhatsAppService {
       // Try importing Baileys dynamically
       const baileys = require('@whiskeysockets/baileys')
       const makeWASocket = baileys.default || baileys.makeWASocket
-      const { useMultiFileAuthState, makeCacheableSignalKeyStore, DisconnectReason } = baileys
+      const { useMultiFileAuthState, makeCacheableSignalKeyStore, DisconnectReason, Browsers } = baileys
 
       const { state, saveCreds } = await useMultiFileAuthState(this.sessionDir)
       const pinoLogger = require('pino')({ level: 'silent' })
@@ -129,6 +129,9 @@ export class WhatsAppService {
           creds: state.creds,
           keys: makeCacheableSignalKeyStore ? makeCacheableSignalKeyStore(state.keys, pinoLogger) : state.keys,
         },
+        browser: Browsers ? Browsers.macOS('Desktop') : ['PAC Companion', 'Chrome', '1.0.0'],
+        syncFullHistory: false,
+        markOnlineOnConnect: true,
         printQRInTerminal: false,
         logger: pinoLogger
       })
@@ -188,11 +191,22 @@ export class WhatsAppService {
       })
 
       this.sock.ev.on('messages.upsert', async (m: any) => {
-        if (m.type === 'notify') {
+        if (m.messages && Array.isArray(m.messages)) {
           for (const msg of m.messages) {
-            if (msg.key.fromMe) continue
+            if (!msg || !msg.key || msg.key.fromMe) continue
 
-            const senderJid = msg.key.participant || msg.key.remoteJid || ''
+            const remoteJid = msg.key.remoteJid || ''
+            const senderJid = msg.key.participant || remoteJid
+
+            // ABSOLUTE HARD BLOCK: Only process 1-on-1 private contact chats ending with @s.whatsapp.net
+            // Hard skip group chats (@g.us), broadcast channels (@newsletter), status updates, etc.
+            if (!remoteJid.endsWith('@s.whatsapp.net') || msg.key.participant) {
+              if (remoteJid.endsWith('@g.us')) {
+                console.log(`⛔ Group chat message blocked from ${remoteJid}. Auto-reply disabled for groups.`)
+              }
+              continue
+            }
+
             const myUserJid = this.sock?.user?.id || ''
             const myUserLid = this.sock?.user?.lid || ''
 
@@ -200,20 +214,16 @@ export class WhatsAppService {
             if (myUserJid && senderJid.split(':')[0] === myUserJid.split(':')[0]) continue
             if (myUserLid && senderJid.split(':')[0] === myUserLid.split(':')[0]) continue
 
-            // ABSOLUTE BLOCK: Never process or auto-reply to group chats (@g.us)
-            if (msg.key.remoteJid?.endsWith('@g.us') || msg.key.participant) {
-              console.log(`⛔ Group chat message detected from ${msg.key.remoteJid}. Auto-reply disabled for groups.`)
-              continue
-            }
-
             if (msg.message) {
               const text = msg.message?.conversation || 
                          msg.message?.extendedTextMessage?.text || 
                          msg.message?.imageMessage?.caption ||
                          msg.message?.ephemeralMessage?.message?.extendedTextMessage?.text ||
                          msg.message?.ephemeralMessage?.message?.conversation ||
+                         msg.message?.viewOnceMessage?.message?.extendedTextMessage?.text ||
+                         msg.message?.viewOnceMessage?.message?.conversation ||
                          ''
-              if (!text) continue
+              if (!text || text.trim().length === 0) continue
 
               const senderName = msg.pushName || senderJid.split('@')[0]
 
