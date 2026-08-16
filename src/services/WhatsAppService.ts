@@ -221,8 +221,8 @@ export class WhatsAppService {
 
             // ABSOLUTE HARD BLOCK: Only process 1-on-1 private contact chats
             // Hard skip group chats (@g.us), broadcast channels (@newsletter), status updates, etc.
-            if (remoteJid.endsWith('@g.us') || msg.key.participant || remoteJid.includes('@newsletter') || remoteJid === 'status@broadcast') {
-              if (remoteJid.endsWith('@g.us')) {
+            if (remoteJid.endsWith('@g.us') || remoteJid.includes('@g.us') || remoteJid.includes('@newsletter') || remoteJid === 'status@broadcast') {
+              if (remoteJid.includes('@g.us')) {
                 console.log(`⛔ Group chat message blocked from ${remoteJid}. Auto-reply disabled for groups.`)
               }
               continue
