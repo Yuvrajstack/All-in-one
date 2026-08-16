@@ -104,7 +104,7 @@ export class MemoryOptimizer {
     }
 
     // group and summarize
-    const contents = result.rows.map(r => r.content).join('\n')
+    const contents = result.rows.map((r: any) => r.content).join('\n')
 
     const prompt = `
 Summarize these old memories into 2-3 sentences.

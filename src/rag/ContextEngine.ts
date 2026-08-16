@@ -65,7 +65,7 @@ Always cite sources. Be specific and personalized.`
         { memoryIds }
       )
 
-      return result.records.map(r => ({
+      return result.records.map((r: any) => ({
         email:   r.get('email'),
         name:    r.get('name'),
         role:    r.get('role'),
@@ -90,7 +90,7 @@ Always cite sources. Be specific and personalized.`
         { memoryIds }
       )
 
-      return result.records.map(r => ({ name: r.get('name') }))
+      return result.records.map((r: any) => ({ name: r.get('name') }))
     } finally {
       await session.close()
     }
@@ -110,7 +110,7 @@ Always cite sources. Be specific and personalized.`
         { emails }
       )
 
-      return result.records.map(r => ({
+      return result.records.map((r: any) => ({
         company: r.get('company'),
         email:   r.get('email'),
       }))

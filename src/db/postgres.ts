@@ -317,7 +317,7 @@ try {
         throw err
       }
     },
-    on: (event: string, handler: any) => {
+    on: (event: any, handler: any) => {
       realPool.on(event, handler)
     },
     end: async () => {

@@ -29,8 +29,8 @@ class InMemorySession {
           counts.set(r.target, (counts.get(r.target) || 0) + 1)
         })
 
-      const records = Array.from(inMemoryGraph.people.values()).map(p => {
-        const count = counts.get(p.email) || counts.get(p.name) || 0
+      const records = Array.from(counts.entries()).map(([personKey, count]) => {
+        const p = inMemoryGraph.people.get(personKey) || { email: personKey, name: personKey }
         return {
           get: (key: string) => {
             if (key === 'email') return p.email
@@ -43,9 +43,16 @@ class InMemorySession {
             return null
           }
         }
-      }).filter(r => r.get('memoryCount').toNumber() > 0)
+      }).filter((r: any) => {
+        const mc = r.get('memoryCount')
+        return mc && typeof mc.toNumber === 'function' && mc.toNumber() > 0
+      })
 
-      records.sort((a, b) => b.get('memoryCount').toNumber() - a.get('memoryCount').toNumber())
+      records.sort((a: any, b: any) => {
+        const valA = a.get('memoryCount')?.toNumber() || 0
+        const valB = b.get('memoryCount')?.toNumber() || 0
+        return valB - valA
+      })
       return { records }
     }
 
@@ -105,7 +112,7 @@ class InMemorySession {
     // MERGE (p:Person {name: $name}) SET p.role = $role, p.company = $company, p.summary = $summary
     if (lowerQ.includes('merge (p:person {name: $name})')) {
       const name = params.name
-      const p = inMemoryGraph.people.get(name) || { email: name, name }
+      const p: any = inMemoryGraph.people.get(name) || { email: name, name }
       p.role = params.role !== undefined ? params.role : p.role
       p.company = params.company !== undefined ? params.company : p.company
       p.summary = params.summary !== undefined ? params.summary : p.summary
@@ -118,7 +125,7 @@ class InMemorySession {
       const name = params.name
       const company = params.company
       inMemoryGraph.companies.add(company)
-      const p = inMemoryGraph.people.get(name) || { email: name, name }
+      const p: any = inMemoryGraph.people.get(name) || { email: name, name }
       p.company = company
       inMemoryGraph.people.set(name, p)
 
@@ -355,7 +362,7 @@ export async function getPeopleFromMemory(memoryId: string): Promise<string[]> {
        RETURN p.email as email`,
       { memoryId }
     )
-    return result.records.map(r => r.get('email'))
+    return result.records.map((r: any) => r.get('email'))
   } finally {
     await session.close()
   }

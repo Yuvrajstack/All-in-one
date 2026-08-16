@@ -83,7 +83,7 @@ Return ONLY valid JSON. No extra text.`
                 count(m) as memoryCount
          ORDER BY memoryCount DESC`
       )
-      return result.records.map(r => ({
+      return result.records.map((r: any) => ({
         email:       r.get('email'),
         name:        r.get('name'),
         company:     r.get('company'),
