@@ -1,8 +1,6 @@
 node_modules/
 dist/
 .env
-credentials.json
 baileys_auth_info/
-whatsapp_auth/
 *.log
 .DS_Store
