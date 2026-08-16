@@ -277,7 +277,7 @@ export class WhatsAppService {
     this.recentMessages.unshift(record)
     if (this.recentMessages.length > 50) this.recentMessages.pop()
 
-    if (autoReplyText && this.sock && this.isConnected) {
+    if (autoReplyText && this.sock) {
       try {
         await this.sendMessage(msg.from, autoReplyText, rawMsg)
         console.log(`📤 WhatsApp Auto-Reply sent to ${msg.from}: "${autoReplyText}"`)
@@ -292,7 +292,7 @@ export class WhatsAppService {
   public async sendMessage(to: string, text: string, rawMsg?: any): Promise<boolean> {
     console.log(`📤 Sending WhatsApp message to ${to}: "${text}"`)
 
-    if (this.sock && this.isConnected) {
+    if (this.sock) {
       const targets: string[] = []
 
       // 1. Primary target: remoteJid from incoming message key
@@ -324,19 +324,28 @@ export class WhatsAppService {
       for (const targetJid of safeTargets) {
         try {
           console.log(`📤 Attempting delivery to JID: ${targetJid}`)
+          try {
+            await this.sock.sendPresenceUpdate('composing', targetJid)
+          } catch (pErr) {}
+
+          let sent = false
           if (rawMsg?.key) {
             try {
-              await this.sock.readMessages([rawMsg.key])
-              await this.sock.sendPresenceUpdate('composing', targetJid)
-              await new Promise(res => setTimeout(res, 400))
-              await this.sock.sendPresenceUpdate('paused', targetJid)
-            } catch (pErr: any) {
-              console.warn('Presence update notice:', pErr.message)
+              await this.sock.sendMessage(targetJid, { text }, { quoted: rawMsg })
+              sent = true
+            } catch (qErr: any) {
+              console.warn('Quoted send notice, retrying unquoted:', qErr.message)
             }
-            await this.sock.sendMessage(targetJid, { text }, { quoted: rawMsg })
-          } else {
+          }
+
+          if (!sent) {
             await this.sock.sendMessage(targetJid, { text })
           }
+
+          try {
+            await this.sock.sendPresenceUpdate('paused', targetJid)
+          } catch (pErr) {}
+
           console.log(`✅ WhatsApp message successfully dispatched to ${targetJid}`)
           return true
         } catch (sendErr: any) {
