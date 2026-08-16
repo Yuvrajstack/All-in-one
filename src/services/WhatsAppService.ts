@@ -295,31 +295,20 @@ export class WhatsAppService {
     if (this.sock && this.isConnected) {
       const targets: string[] = []
 
-      // Candidate 1: Check allowed contacts configuration for verified phone numbers via onWhatsApp
-      const allowed = (process.env.WHATSAPP_ALLOWED_CONTACTS || (global as any).whatsappAllowedContacts || '').trim()
-      if (allowed) {
-        const phoneMatches = allowed.match(/\+?[0-9]{7,15}/g) || []
-        for (const num of phoneMatches) {
-          try {
-            const onWa = await this.sock.onWhatsApp(num)
-            if (onWa && onWa[0] && onWa[0].exists) {
-              const waJid = onWa[0].jid
-              if (!targets.includes(waJid)) targets.unshift(waJid)
-              console.log(`📱 Verified onWhatsApp JID for ${num}: ${waJid}`)
-            }
-          } catch {}
-        }
+      // 1. Primary target: remoteJid from incoming message key
+      const remoteJid = rawMsg?.key?.remoteJid || to
+      if (remoteJid && !remoteJid.includes('@g.us')) {
+        targets.push(remoteJid)
       }
 
-      // Candidate 2: Check if rawMsg key or participant has a phone JID (@s.whatsapp.net)
+      // 2. Participant or 'to' JID fallback
       const participant = rawMsg?.key?.participant || rawMsg?.participant
-      if (participant && participant.includes('@s.whatsapp.net')) {
-        if (!targets.includes(participant)) targets.push(participant)
+      if (participant && participant.includes('@s.whatsapp.net') && !targets.includes(participant)) {
+        targets.push(participant)
       }
 
-      // Candidate 3: Format 'to' if it is a phone number or @s.whatsapp.net
-      if (to && to.includes('@s.whatsapp.net')) {
-        if (!targets.includes(to)) targets.push(to)
+      if (to && to.includes('@s.whatsapp.net') && !targets.includes(to)) {
+        targets.push(to)
       } else if (to && !to.includes('@')) {
         const digits = to.replace(/[^0-9]/g, '')
         if (digits.length >= 7 && !targets.includes(`${digits}@s.whatsapp.net`)) {
@@ -327,16 +316,10 @@ export class WhatsAppService {
         }
       }
 
-      // Candidate 4: Include raw remoteJid if it is not a group chat
-      const remoteJid = rawMsg?.key?.remoteJid || to
-      if (remoteJid && !remoteJid.includes('@g.us') && !targets.includes(remoteJid)) {
-        targets.push(remoteJid)
-      }
-
       // STRICT FILTER: Remove any group chat JIDs (@g.us)
       const safeTargets = targets.filter(jid => !jid.includes('@g.us'))
 
-      console.log(`🎯 Candidate WhatsApp target JIDs for delivery (Group-Filtered):`, safeTargets)
+      console.log(`🎯 Candidate WhatsApp target JIDs for delivery:`, safeTargets)
 
       for (const targetJid of safeTargets) {
         try {
