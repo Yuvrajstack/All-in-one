@@ -49,10 +49,8 @@ export class WhatsAppAgent {
 
     // 2. Generate intelligent auto-reply using RAG & context if autoReply is enabled
     if (!autoReply) return null
-
-    // Check allowed contacts whitelist if specified
     const allowed = (process.env.WHATSAPP_ALLOWED_CONTACTS || (global as any).whatsappAllowedContacts || '').trim()
-    if (allowed && allowed !== '*') {
+    if (allowed && allowed !== '*' && !allowed.includes('*')) {
       const allowedItems = allowed.split(',').map((s: string) => s.trim()).filter(Boolean)
       const senderNameLower = (msg.senderName || '').toLowerCase().replace(/[^a-z0-9]/g, '')
       const senderFromLower = (msg.from || '').toLowerCase()
@@ -63,22 +61,22 @@ export class WhatsAppAgent {
         const itemClean = itemLower.replace(/[^a-z0-9]/g, '')
         const itemDigits = item.replace(/\D/g, '')
 
-        // 1. Robust Phone number match (compare last 10 digits to ignore +91 / 91 / 0 prefixes)
-        if (itemDigits.length >= 7 && senderFromDigits.length >= 7) {
-          const item10 = itemDigits.slice(-10)
-          const sender10 = senderFromDigits.slice(-10)
-          if (item10 === sender10 || senderFromDigits.includes(itemDigits) || itemDigits.includes(senderFromDigits)) {
+        // 1. Phone number match
+        if (itemDigits.length >= 5 && senderFromDigits.length >= 5) {
+          const itemLast = itemDigits.slice(-7)
+          const senderLast = senderFromDigits.slice(-7)
+          if (itemLast === senderLast || senderFromDigits.includes(itemDigits) || itemDigits.includes(senderFromDigits)) {
             return true
           }
         }
 
-        // 2. Normalized name or raw substring match
+        // 2. Normalized name match
         if (itemClean && itemClean.length >= 2 && (senderNameLower.includes(itemClean) || itemClean.includes(senderNameLower) || senderFromLower.includes(itemLower))) {
           return true
         }
 
-        // 3. Token match (e.g. "shivam" in "Satyam Shivam")
-        const itemTokens = itemLower.split(/[\s,]+/).filter(t => t.length >= 3)
+        // 3. Token match
+        const itemTokens = itemLower.split(/[\s,]+/).filter(t => t.length >= 2)
         const nameTokens = (msg.senderName || '').toLowerCase().split(/[\s,]+/)
         if (itemTokens.some(t => nameTokens.includes(t) || senderNameLower.includes(t))) {
           return true
@@ -88,15 +86,20 @@ export class WhatsAppAgent {
       })
 
       if (!isAllowed) {
-        console.log(`ℹ️ WhatsApp Auto-Reply skipped: Contact "${msg.senderName || msg.from}" is not in the allowed contacts list [${allowed}].`)
+        console.log(`ℹ️ WhatsApp Auto-Reply skipped for Contact "${msg.senderName || msg.from}" [Allowed list: ${allowed}].`)
         return null
       }
     }
 
     try {
       // Query RAG for context related to sender and message content
-      const queryContext = `${msg.senderName || msg.from} asked: ${msg.body}`
-      const ragContext = await this.rag.query(queryContext, userId)
+      let ragContext = ''
+      try {
+        const queryContext = `${msg.senderName || msg.from} asked: ${msg.body}`
+        ragContext = await this.rag.query(queryContext, userId)
+      } catch (ragErr) {
+        console.warn('RAG query skipped:', ragErr)
+      }
 
       const prompt = `You are PAC (Personal AI Companion), an intelligent personal assistant acting on behalf of your user.
 You received a personal WhatsApp message from "${msg.senderName || msg.from}".
@@ -110,11 +113,11 @@ ${ragContext}
 Instructions:
 1. Craft a sweet, warm, natural, and **ROMANTIC & CARING Hinglish** WhatsApp auto-reply (Hindi in Roman script with sweet affection, e.g., "Aww thank you! Main thoda busy hu abhi, shaam ko aapse acche se baat karta hu ❤️", "Haanji, aap batao kaise ho? Main bas thoda busy tha, miss you! ✨").
 2. Keep the tone sweet, loving, warm, and romantic (1-2 sentences max).
-3. If specific details (e.g. availability, schedule, or project status) are known from the user context, reference them accurately with a sweet caring vibe.
+3. If specific details are known from user context, reference them accurately with a sweet caring vibe.
 4. Do NOT include any intro/outro, quotes, or placeholder text. Return ONLY the final romantic Hinglish message to be sent.`
 
       let response: any
-      const modelsToTry = [LLM_MODEL, 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it']
+      const modelsToTry = [LLM_MODEL, 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it']
       for (const modelName of modelsToTry) {
         try {
           response = await groqClient.chat.completions.create({
@@ -127,25 +130,27 @@ Instructions:
         }
       }
 
-      const replyText = response?.choices?.[0]?.message?.content?.trim() || null
+      const replyText = response?.choices?.[0]?.message?.content?.trim() || "Aww thank you! Main thoda busy hu abhi, shaam ko aapse acche se baat karta hu ❤️"
+
       if (replyText) {
-        // Store sent auto-reply as memory too
-        const sentInput: CreateMemoryInput = {
-          userId,
-          type:      'fact',
-          content:   `Sent WhatsApp Auto-Reply to ${msg.senderName || msg.from}: "${replyText}"`,
-          category:  'general',
-          source:    'whatsapp' as any,
-          sourceRef: msg.from,
-          importance: 0.5
-        }
-        await this.memEngine.store(sentInput)
+        try {
+          const sentInput: CreateMemoryInput = {
+            userId,
+            type:      'fact',
+            content:   `Sent WhatsApp Auto-Reply to ${msg.senderName || msg.from}: "${replyText}"`,
+            category:  'general',
+            source:    'whatsapp' as any,
+            sourceRef: msg.from,
+            importance: 0.5
+          }
+          await this.memEngine.store(sentInput)
+        } catch (memErr) {}
       }
 
       return replyText
     } catch (err: any) {
-      console.error('WhatsAppAgent: failed to generate auto reply:', err.message)
-      return null
+      console.error('WhatsAppAgent error, returning default romantic reply:', err.message)
+      return "Aww thank you! Main thoda busy hu abhi, shaam ko aapse acche se baat karta hu ❤️"
     }
   }
 
