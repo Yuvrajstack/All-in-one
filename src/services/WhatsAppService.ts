@@ -170,9 +170,18 @@ export class WhatsAppService {
         if (connection === 'close') {
           this.isConnected = false
           this.isConnecting = false
-          const shouldReconnect = (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut)
-          console.log(`⚠️ WhatsApp connection closed. Reconnecting: ${shouldReconnect}`)
-          if (shouldReconnect) {
+          const statusCode = lastDisconnect?.error?.output?.statusCode
+          const isLoggedOut = statusCode === DisconnectReason.loggedOut
+          console.log(`⚠️ WhatsApp connection closed (status: ${statusCode}). Reconnecting: ${!isLoggedOut}`)
+
+          if (isLoggedOut) {
+            console.log('⚠️ WhatsApp session logged out. Clearing auth directory for clean pairing...')
+            try {
+              if (fs.existsSync(this.sessionDir)) {
+                fs.rmSync(this.sessionDir, { recursive: true, force: true })
+              }
+            } catch (e) {}
+          } else {
             setTimeout(() => this.initConnection(), 5000)
           }
         }
